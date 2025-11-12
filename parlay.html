@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Parlay Calculator — Hoops Risk Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Educational parlay calculator for implied probability, EV, and payout." />
+  <link rel="icon" href="data:," />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#0f172a; color:#fff; display:flex; justify-content:center; padding:24px; }
+    .app { background:#1f2937; padding:20px; border-radius:12px; max-width:720px; width:100%; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    h1 { font-size:1.25rem; margin:0 0 10px;}
+    .banner{background:#7f1d1d;padding:10px;border-radius:8px;margin-bottom:12px;color:#fff;font-weight:700}
+    label{display:block;margin-top:12px;margin-bottom:6px;font-weight:600}
+    input,button{padding:10px;border-radius:8px;border:none;font-size:1rem}
+    input{background:#0f172a;color:#fff}
+    button{background:#38bdf8;color:#0b1220;font-weight:800;margin-top:12px;cursor:pointer}
+    .legs { margin-top:8px; }
+    .leg { display:grid; grid-template-columns: 1fr 160px 40px; gap:8px; margin-bottom:8px; align-items:center; }
+    .leg input { width:100%; }
+    .remove { background:#ef4444; color:#0b1220; font-weight:800; }
+    .add { background:#34d399; color:#0b1220; font-weight:800; }
+    .result{margin-top:16px;background:#0f172a;padding:12px;border-radius:8px}
+    .result p{margin:6px 0}
+    a{color:#93c5fd}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Parlay Calculator 🏀</h1>
+    <div class="banner">EDUCATIONAL USE ONLY — Learn probabilities & expected value. Not betting advice.</div>
+
+    <label>Parlay legs (American odds like +150 or -120)</label>
+    <div class="legs" id="legs"></div>
+    <button class="add" id="addLeg">+ Add leg</button>
+
+    <label for="stake">Simulation stake (for demo only, $)</label>
+    <input id="stake" type="number" placeholder="20" />
+
+    <button id="calcBtn">Calculate Parlay</button>
+
+    <div class="result" id="resultBox" style="display:none;">
+      <p id="summary"></p>
+      <p id="comboDec"></p>
+      <p id="comboUS"></p>
+      <p id="payout"></p>
+      <p id="implied"></p>
+      <p id="evline"></p>
+      <p id="risk"></p>
+    </div>
+
+    <p style="margin-top:10px;"><a href="index.html">← Back to single bet</a></p>
+    <footer style="opacity:.85;margin-top:8px;">Made by <strong>Hani</strong>. Source on GitHub.</footer>
+  </div>
+
+  <script>
+    // --- helpers ---
+    function americanToDecimal(odds) {
+      return odds > 0 ? (1 + (odds/100)) : (1 + (100/Math.abs(odds)));
+    }
+    function americanToImplied(odds) {
+      return odds > 0 ? 100/(odds+100) : Math.abs(odds)/(Math.abs(odds)+100);
+    }
+    function decimalToAmerican(dec) {
+      if (dec >= 2) return Math.round((dec - 1) * 100); // positive
+      return -Math.round(100 / (dec - 1)); // negative
+    }
+    function riskLabel(p) {
+      if (p < 0.20) return "🔴 very low probability (per odds)";
+      if (p < 0.35) return "🟠 low probability (per odds)";
+      if (p < 0.55) return "🟡 medium probability (per odds)";
+      return "🟢 higher probability (per odds)";
+    }
+
+    // --- dynamic legs UI ---
+    const legsDiv = document.getElementById('legs');
+    const addBtn = document.getElementById('addLeg');
+    function addLegRow(value="+150", label="Leg") {
+      const row = document.createElement('div');
+      row.className = 'leg';
+      row.innerHTML = `
+        <input class="label" placeholder="e.g., SGA over 27.5 pts" value="${label}">
+        <input class="odds" placeholder="+150 or -120" value="${value}">
+        <button class="remove">×</button>
+      `;
+      row.querySelector('.remove').addEventListener('click', ()=> row.remove());
+      legsDiv.appendChild(row);
+    }
+    addBtn.addEventListener('click', ()=> addLegRow());
+    // start with two legs for demo
+    addLegRow("+150", "Leg 1");
+    addLegRow("-120", "Leg 2");
+
+    // --- calculate ---
+    document.getElementById('calcBtn').addEventListener('click', ()=>{
+      const stake = parseFloat(document.getElementById('stake').value);
+      const rows = Array.from(document.querySelectorAll('.leg'));
+      if (!rows.length) { alert("Add at least one leg."); return; }
+      if (isNaN(stake) || stake <= 0) { alert("Enter a simulation stake."); return; }
+
+      let combinedDecimal = 1.0;
+      let combinedProb = 1.0;
+      let labels = [];
+
+      for (const row of rows) {
+        const label = row.querySelector('.label').value || "Leg";
+        const oddsStr = (row.querySelector('.odds').value || "").trim();
+        if (!oddsStr || (!oddsStr.startsWith('+') && !oddsStr.startsWith('-'))) {
+          alert("Use American odds with + or - on every leg."); return;
+        }
+        const odds = parseInt(oddsStr, 10);
+        if (isNaN(odds)) { alert("Invalid odds: " + oddsStr); return; }
+
+        combinedDecimal *= americanToDecimal(odds);
+        combinedProb *= americanToImplied(odds);
+        labels.push(`${label} (${oddsStr})`);
+      }
+
+      const profit = stake * (combinedDecimal - 1);
+      const payout = stake + profit;
+      const ev = (combinedProb * profit) + ((1 - combinedProb) * (-stake));
+      const us = decimalToAmerican(combinedDecimal);
+
+      document.getElementById('summary').textContent = "Parlay: " + labels.join(" · ");
+      document.getElementById('comboDec').textContent = "Combined decimal odds: " + combinedDecimal.toFixed(4);
+      document.getElementById('comboUS').textContent  = "Approx. American: " + (us > 0 ? "+"+us : us);
+      document.getElementById('payout').textContent   = "Simulated payout: $" + payout.toFixed(2) + " (profit $" + profit.toFixed(2) + ")";
+      document.getElementById('implied').textContent  = "Combined implied probability (assuming independence): " + (combinedProb*100).toFixed(2) + "%";
+      document.getElementById('evline').textContent   = "Expected Value (EV) per attempt: $" + ev.toFixed(2);
+      document.getElementById('risk').textContent     = "Risk (based on odds only): " + riskLabel(combinedProb);
+
+      document.getElementById('resultBox').style.display = "block";
+    });
+  </script>
+</body>
+</html>
