@@ -3,7 +3,7 @@
 A tiny browser app that teaches implied probability and expected value from American odds. **Educational use only** — not betting advice.
 
 - Stack: HTML, CSS, JavaScript (no framework)
-- Live site: (add your URL)
+- Live site: (https://han1683.github.io/hoops-risk-lab/)
 - Features: Odds → implied probability, simulated payout, expected value (EV), risk label
 - Ethic: Harm-reduction + education. No sportsbook links. Disclaimer + help resources.
 
