@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hoops Risk Lab — Educational Odds & EV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Educational tool to learn implied probability and expected value from American odds. Not betting advice." />
+  <link rel="icon" href="data:," />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#0f172a; color:#fff; display:flex; justify-content:center; padding:24px; }
+    .app { background:#1f2937; padding:20px; border-radius:12px; max-width:520px; width:100%; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+    h1 { font-size:1.25rem; margin:0 0 10px;}
+    .banner{background:#7f1d1d;padding:10px;border-radius:8px;margin-bottom:12px;color:#fff;font-weight:700}
+    label{display:block;margin-top:12px;margin-bottom:6px;font-weight:600}
+    input,button{width:100%;padding:10px;border-radius:8px;border:none;font-size:1rem}
+    input{background:#0f172a;color:#fff}
+    button{background:#38bdf8;color:#0b1220;font-weight:800;margin-top:12px;cursor:pointer}
+    .result{margin-top:16px;background:#0f172a;padding:12px;border-radius:8px}
+    .result p{margin:6px 0}
+    footer{margin-top:14px; font-size:.9rem; opacity:.85}
+    a{color:#93c5fd}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Hoops Risk Lab 🏀</h1>
+    <div class="banner">EDUCATIONAL USE ONLY — Learn probabilities & expected value. This is NOT financial or betting advice. If gambling is an issue, seek help (e.g., ConnexOntario, Gamblers Anonymous).</div>
+
+    <label for="betName">Label (player/prop)</label>
+    <input id="betName" placeholder="e.g., SGA over 27.5 points" />
+
+    <label for="odds">American Odds (+150 or -120)</label>
+    <input id="odds" placeholder="+150" />
+
+    <label for="stake">Simulation stake (for demo only, $)</label>
+    <input id="stake" type="number" placeholder="20" />
+
+    <button id="calcBtn">Calculate</button>
+
+    <div class="result" id="resultBox" style="display:none;">
+      <p id="displayBet"></p>
+      <p id="profit"></p>
+      <p id="payout"></p>
+      <p id="implied"></p>
+      <p id="evline"></p>
+      <p id="risk"></p>
+    </div>
+
+    <footer>
+      <div>Made by <strong>Hani</strong>. Source on GitHub.</div>
+      <div>Why this exists: to teach implied probability & EV, and highlight long-term risk.</div>
+    </footer>
+  </div>
+
+  <script>
+    function oddsToImplied(odds){
+      if(odds>0) return 100/(odds+100);
+      return Math.abs(odds)/(Math.abs(odds)+100);
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', ()=>{
+      const betName = document.getElementById('betName').value || "Bet";
+      const oddsStr = (document.getElementById('odds').value || "").trim();
+      const stake = parseFloat(document.getElementById('stake').value);
+
+      if(!oddsStr || isNaN(stake)){ alert("Enter odds and a simulation amount."); return; }
+
+      const odds = parseInt(oddsStr,10);
+      if(isNaN(odds) || (!oddsStr.startsWith("+") && !oddsStr.startsWith("-"))){
+        alert("Use +150 or -120 format."); return;
+      }
+
+      const profit = odds>0 ? stake*(odds/100) : stake*(100/Math.abs(odds));
+      const payout = stake + profit;
+      const p = oddsToImplied(odds);
+      const ev = (p*profit) + ((1-p)*(-stake));
+
+      let riskLabel = "🟢 higher probability (per odds)";
+      if(p < 0.55) riskLabel = "🟡 medium probability (per odds)";
+      if(p < 0.35) riskLabel = "🔴 low probability (per odds)";
+
+      document.getElementById('displayBet').textContent = betName + " (simulation)";
+      document.getElementById('profit').textContent = "Estimated profit if win: $" + profit.toFixed(2);
+      document.getElementById('payout').textContent = "Simulated payout: $" + payout.toFixed(2);
+      document.getElementById('implied').textContent = "Implied probability: " + (p*100).toFixed(2) + "%";
+      document.getElementById('evline').textContent = "Expected Value (EV) per attempt: $" + ev.toFixed(2) + " (negative EV implies long-term loss)";
+      document.getElementById('risk').textContent = "Risk (based on odds only): " + riskLabel;
+
+      document.getElementById('resultBox').style.display = "block";
+    });
+  </script>
+</body>
+</html>
