@@ -17,4 +17,4 @@ Open `index.html` in any modern browser.
 ## Next steps
 - Parlay calculator
 - Bankroll “2% rule” demo
-- Player stats dashboard (non-betting, analytics only
+- Player stats dashboard (non-betting, analytics only)
